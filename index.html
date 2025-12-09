@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundBites - Audio Segmentation Tool</title>
+
+    <style>
+        /* ========================================
+           CSS STYLING
+           ======================================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #764ba2;
+            --secondary-color: #4F4F4F;
+            --background: #f7fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --success-color: #48bb78;
+            --danger-color: #f56565;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card h2 {
+            color: var(--primary-dark);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        /* Upload Section */
+        #upload-section {
+            text-align: center;
+        }
+
+        #audioFile {
+            display: none;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-upload-btn {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: var(--shadow);
+        }
+
+        .file-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        #fileInfo {
+            margin-top: 15px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        #loadingIndicator {
+            display: none;
+            margin-top: 20px;
+            font-size: 1rem;
+            color: var(--primary-color);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Master Track Section */
+        .instructions {
+            background: #e6f2ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .instructions strong {
+            color: var(--primary-dark);
+        }
+
+        .keyboard-shortcuts {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .keyboard-shortcuts kbd {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 0.9em;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        #master-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .control-group-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-right: 5px;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        #waveform-master {
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            cursor: crosshair;
+            transition: border-color 0.2s;
+        }
+
+        #waveform-master:hover {
+            border-color: var(--primary-color);
+        }
+
+        #time-display {
+            text-align: right;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Clips Section */
+        #clips-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .clip-row {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            transition: border-color 0.2s;
+        }
+
+        .clip-row:hover {
+            border-color: var(--primary-color);
+        }
+
+        .clip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .clip-name-input {
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: 2px solid transparent;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: border-color 0.2s;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .clip-name-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .clip-duration {
+            color: var(--text-secondary);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .clip-waveform {
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .clip-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .clip-controls .control-group {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .clip-controls button {
+            font-size: 0.85rem;
+            padding: 8px 15px;
+        }
+
+        .btn-clip-play {
+            background: var(--success-color);
+        }
+
+        .btn-clip-play:hover {
+            background: #38a169;
+        }
+
+        .btn-clip-play.playing {
+            background: var(--danger-color);
+        }
+
+        .btn-clip-stop,
+        .btn-clip-rewind,
+        .btn-clip-forward {
+            background: var(--primary-color);
+        }
+
+        .btn-clip-mute {
+            background: var(--secondary-color);
+        }
+
+        .btn-clip-mute.muted {
+            background: var(--danger-color);
+        }
+
+        .btn-download-wav,
+        .btn-download-mp3 {
+            background: var(--primary-color);
+        }
+
+        .btn-delete {
+            background: var(--danger-color);
+        }
+
+        .btn-delete:hover {
+            background: #e53e3e;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            #master-controls {
+                flex-direction: column;
+            }
+
+            .clip-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .clip-name-input {
+                max-width: 100%;
+            }
+        }
+
+        /* Error Messages */
+        .error-message {
+            background: #fff5f5;
+            border: 2px solid var(--danger-color);
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SoundBites</h1>
+            <p class="subtitle">Upload, segment, and extract audio clips</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section id="upload-section" class="card">
+            <h2>1. Upload Audio File</h2>
+            <div class="file-upload-wrapper">
+                <button class="file-upload-btn" onclick="document.getElementById('audioFile').click()">
+                    Choose Audio File
+                </button>
+                <input type="file" id="audioFile" accept="audio/*">
+            </div>
+            <div id="fileInfo"></div>
+            <div id="loadingIndicator">
+                <span class="spinner"></span>
+                <span>Decoding audio file...</span>
+            </div>
+            <div id="uploadError" class="error-message"></div>
+        </section>
+
+        <!-- Master Track Section -->
+        <section id="master-track-section" class="card" style="display:none;">
+            <h2>2. Master Track</h2>
+
+            <div class="instructions">
+                <strong>How to select a region:</strong> Click and drag on the waveform below to select a time range.
+                You can resize the selection by dragging the edges of the highlighted region.
+            </div>
+
+            <div id="master-controls">
+                <div class="control-group">
+                    <button id="playPause">Play</button>
+                    <button id="stop">Stop</button>
+                    <button id="rewind">⏪ -5s</button>
+                    <button id="forward">⏩ +5s</button>
+                </div>
+                <div class="control-group">
+                    <button id="toggleLoop" disabled>Loop: Off</button>
+                    <button id="extractClip" disabled>Extract Selected Region</button>
+                </div>
+            </div>
+            <div id="waveform-master"></div>
+            <div id="time-display">00:00 / 00:00</div>
+
+            <div class="keyboard-shortcuts">
+                <strong>Keyboard Shortcuts:</strong>
+                <kbd>Space</kbd> Play/Pause |
+                <kbd>S</kbd> Stop |
+                <kbd>←</kbd> Rewind 5s |
+                <kbd>→</kbd> Forward 5s |
+                <kbd>L</kbd> Toggle Loop |
+                <kbd>E</kbd> Extract Region
+            </div>
+        </section>
+
+        <!-- Clips Section -->
+        <section id="clips-section" class="card" style="display:none;">
+            <h2>3. Extracted Clips</h2>
+            <div id="clips-container"></div>
+        </section>
+    </div>
+
+    <!-- External Dependencies -->
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+
+    <script>
+        /* ========================================
+           JAVASCRIPT APPLICATION
+           ======================================== */
+
+        // ========================================
+        // Application State
+        // ========================================
+        const AppState = {
+            audioContext: null,
+            masterAudioBuffer: null,
+            masterWavesurfer: null,
+            regionsPlugin: null,
+            clips: [],
+            clipCounter: 0,
+            currentRegion: null,
+            isLooping: false
+        };
+
+        // ========================================
+        // Audio Loading Module
+        // ========================================
+
+        async function initAudio() {
+            if (!AppState.audioContext) {
+                AppState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Show loading state
+            showLoading(true);
+            hideError();
+
+            try {
+                await initAudio();
+                const arrayBuffer = await file.arrayBuffer();
+                AppState.masterAudioBuffer = await AppState.audioContext.decodeAudioData(arrayBuffer);
+
+                // Show file info
+                const fileInfo = document.getElementById('fileInfo');
+                fileInfo.innerHTML = `
+                    <strong>File:</strong> ${file.name}<br>
+                    <strong>Duration:</strong> ${formatTime(AppState.masterAudioBuffer.duration)}<br>
+                    <strong>Sample Rate:</strong> ${AppState.masterAudioBuffer.sampleRate} Hz<br>
+                    <strong>Channels:</strong> ${AppState.masterAudioBuffer.numberOfChannels}
+                `;
+
+                // Initialize master track
+                await initMasterTrack();
+
+                // Show master track section
+                document.getElementById('master-track-section').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading audio:', error);
+                showError('Error loading audio file. Please make sure it\'s a valid audio format.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // ========================================
+        // Master Track Module
+        // ========================================
+
+        async function initMasterTrack() {
+            const container = document.getElementById('waveform-master');
+
+            // Destroy existing instance if any
+            if (AppState.masterWavesurfer) {
+                AppState.masterWavesurfer.destroy();
+            }
+
+            // Initialize Wavesurfer
+            AppState.masterWavesurfer = WaveSurfer.create({
+                container: container,
+                waveColor: '#4F4F4F',
+                progressColor: '#667eea',
+                cursorColor: '#764ba2',
+                barWidth: 2,
+                barRadius: 3,
+                cursorWidth: 1,
+                height: 128,
+                barGap: 2,
+                responsive: true,
+                normalize: true
+            });
+
+            // Load audio buffer
+            const blob = await audioBufferToBlob(AppState.masterAudioBuffer);
+            await AppState.masterWavesurfer.loadBlob(blob);
+
+            // Initialize Regions Plugin
+            try {
+                AppState.regionsPlugin = AppState.masterWavesurfer.registerPlugin(
+                    WaveSurfer.Regions.create()
+                );
+
+                // Enable drag selection
+                AppState.regionsPlugin.enableDragSelection({
+                    color: 'rgba(102, 126, 234, 0.5)'
+                });
+
+                // Event listeners for regions
+                AppState.regionsPlugin.on('region-created', onRegionCreated);
+                AppState.regionsPlugin.on('region-updated', onRegionUpdated);
+                AppState.regionsPlugin.on('region-clicked', (region, e) => {
+                    console.log('Region clicked:', region);
+                });
+
+                console.log('Regions plugin initialized successfully');
+            } catch (error) {
+                console.error('Error initializing Regions plugin:', error);
+            }
+
+            // Event listeners for wavesurfer
+            AppState.masterWavesurfer.on('play', () => updatePlayButton(true));
+            AppState.masterWavesurfer.on('pause', () => updatePlayButton(false));
+            AppState.masterWavesurfer.on('audioprocess', (time) => {
+                updateTimeDisplay(time);
+
+                // Handle looping of region
+                if (AppState.isLooping && AppState.currentRegion) {
+                    const regionEnd = AppState.currentRegion.end;
+                    if (time >= regionEnd) {
+                        // Jump back to start of region
+                        const regionStart = AppState.currentRegion.start;
+                        AppState.masterWavesurfer.seekTo(regionStart / AppState.masterWavesurfer.getDuration());
+                    }
+                }
+            });
+            AppState.masterWavesurfer.on('finish', () => {
+                if (AppState.isLooping && AppState.currentRegion) {
+                    // Jump to start of region and play again
+                    const regionStart = AppState.currentRegion.start;
+                    AppState.masterWavesurfer.seekTo(regionStart / AppState.masterWavesurfer.getDuration());
+                    AppState.masterWavesurfer.play();
+                }
+            });
+
+            // Log ready state
+            AppState.masterWavesurfer.on('ready', () => {
+                console.log('Wavesurfer ready. You can now drag on the waveform to select a region.');
+            });
+        }
+
+        function onRegionCreated(region) {
+            console.log('Region created event fired:', region);
+
+            // Clear previous regions (only allow one selection at a time)
+            const regions = AppState.regionsPlugin.getRegions();
+            regions.forEach(r => {
+                if (r !== region) r.remove();
+            });
+
+            AppState.currentRegion = region;
+            document.getElementById('extractClip').disabled = false;
+            document.getElementById('toggleLoop').disabled = false;
+        }
+
+        function onRegionUpdated(region) {
+            // Region was resized
+            AppState.currentRegion = region;
+        }
+
+        function toggleMasterPlayback() {
+            if (AppState.masterWavesurfer.isPlaying()) {
+                AppState.masterWavesurfer.pause();
+            } else {
+                AppState.masterWavesurfer.play();
+            }
+        }
+
+        function stopPlayback() {
+            AppState.masterWavesurfer.stop();
+        }
+
+        function rewindPlayback() {
+            const currentTime = AppState.masterWavesurfer.getCurrentTime();
+            const newTime = Math.max(0, currentTime - 5);
+            AppState.masterWavesurfer.seekTo(newTime / AppState.masterWavesurfer.getDuration());
+        }
+
+        function forwardPlayback() {
+            const currentTime = AppState.masterWavesurfer.getCurrentTime();
+            const duration = AppState.masterWavesurfer.getDuration();
+            const newTime = Math.min(duration, currentTime + 5);
+            AppState.masterWavesurfer.seekTo(newTime / duration);
+        }
+
+        function updatePlayButton(isPlaying) {
+            const btn = document.getElementById('playPause');
+            btn.textContent = isPlaying ? 'Pause' : 'Play';
+        }
+
+        function updateTimeDisplay(time) {
+            const current = formatTime(time);
+            const total = formatTime(AppState.masterWavesurfer.getDuration());
+            document.getElementById('time-display').textContent = `${current} / ${total}`;
+        }
+
+        function toggleLoop() {
+            if (!AppState.currentRegion) return;
+
+            AppState.isLooping = !AppState.isLooping;
+            const btn = document.getElementById('toggleLoop');
+            btn.textContent = `Loop: ${AppState.isLooping ? 'On' : 'Off'}`;
+
+            if (AppState.isLooping && AppState.currentRegion) {
+                // Start playing from the beginning of the region
+                const regionStart = AppState.currentRegion.start;
+                AppState.masterWavesurfer.seekTo(regionStart / AppState.masterWavesurfer.getDuration());
+                AppState.masterWavesurfer.play();
+            }
+        }
+
+        // ========================================
+        // Clip Extraction Module
+        // ========================================
+
+        function extractAudioSegment(sourceBuffer, startTime, endTime) {
+            const sampleRate = sourceBuffer.sampleRate;
+            const numberOfChannels = sourceBuffer.numberOfChannels;
+            const startSample = Math.floor(startTime * sampleRate);
+            const endSample = Math.floor(endTime * sampleRate);
+            const segmentLength = endSample - startSample;
+
+            // Create new AudioBuffer for the segment
+            const segmentBuffer = AppState.audioContext.createBuffer(
+                numberOfChannels,
+                segmentLength,
+                sampleRate
+            );
+
+            // Copy data for each channel
+            for (let channel = 0; channel < numberOfChannels; channel++) {
+                const sourceData = sourceBuffer.getChannelData(channel);
+                const segmentData = segmentBuffer.getChannelData(channel);
+
+                for (let i = 0; i < segmentLength; i++) {
+                    segmentData[i] = sourceData[startSample + i];
+                }
+            }
+
+            return segmentBuffer;
+        }
+
+        async function createClip() {
+            if (!AppState.currentRegion) return;
+
+            const { start, end } = AppState.currentRegion;
+
+            // Prevent rapid clicks
+            const extractBtn = document.getElementById('extractClip');
+            const originalText = extractBtn.textContent;
+            extractBtn.disabled = true;
+            extractBtn.textContent = 'Extracting...';
+
+            try {
+                const clipBuffer = extractAudioSegment(AppState.masterAudioBuffer, start, end);
+
+                const clipId = `clip_${++AppState.clipCounter}`;
+                const clipName = `Clip ${AppState.clipCounter}`;
+
+                const clip = {
+                    id: clipId,
+                    name: clipName,
+                    buffer: clipBuffer,
+                    startTime: start,
+                    endTime: end,
+                    duration: end - start,
+                    wavesurfer: null,
+                    isMuted: false
+                };
+
+                AppState.clips.push(clip);
+
+                // Render clip in UI
+                await renderClip(clip);
+
+                // Show clips section
+                document.getElementById('clips-section').style.display = 'block';
+
+                // Clear region
+                AppState.currentRegion.remove();
+                AppState.currentRegion = null;
+                document.getElementById('toggleLoop').disabled = true;
+                AppState.isLooping = false;
+                document.getElementById('toggleLoop').textContent = 'Loop: Off';
+
+                // Reset button text
+                extractBtn.textContent = originalText;
+
+            } catch (error) {
+                console.error('Error creating clip:', error);
+                showError('Error creating clip. Please try again.');
+                extractBtn.disabled = false;
+                extractBtn.textContent = originalText;
+            }
+        }
+
+        // ========================================
+        // Clip UI Module
+        // ========================================
+
+        function createClipDOM(clip) {
+            const clipRow = document.createElement('div');
+            clipRow.className = 'clip-row';
+            clipRow.id = clip.id;
+
+            clipRow.innerHTML = `
+                <div class="clip-header">
+                    <input type="text"
+                           class="clip-name-input"
+                           value="${escapeHtml(clip.name)}"
+                           data-clip-id="${clip.id}">
+                    <span class="clip-duration">${formatTime(clip.duration)}</span>
+                </div>
+                <div class="clip-waveform" id="waveform-${clip.id}"></div>
+                <div class="clip-controls">
+                    <div class="control-group">
+                        <button class="btn-clip-play" data-clip-id="${clip.id}">Play</button>
+                        <button class="btn-clip-stop" data-clip-id="${clip.id}">Stop</button>
+                        <button class="btn-clip-rewind" data-clip-id="${clip.id}">⏪ -5s</button>
+                        <button class="btn-clip-forward" data-clip-id="${clip.id}">⏩ +5s</button>
+                        <button class="btn-clip-mute" data-clip-id="${clip.id}">Mute</button>
+                    </div>
+                    <div class="control-group">
+                        <button class="btn-download-wav" data-clip-id="${clip.id}">Download WAV</button>
+                        <button class="btn-download-mp3" data-clip-id="${clip.id}">Download MP3</button>
+                        <button class="btn-delete" data-clip-id="${clip.id}">Delete</button>
+                    </div>
+                </div>
+            `;
+
+            return clipRow;
+        }
+
+        async function renderClip(clip) {
+            const container = document.getElementById('clips-container');
+            const clipElement = createClipDOM(clip);
+            container.appendChild(clipElement);
+
+            // Initialize mini Wavesurfer for this clip
+            const waveformContainer = document.getElementById(`waveform-${clip.id}`);
+
+            clip.wavesurfer = WaveSurfer.create({
+                container: waveformContainer,
+                waveColor: '#A3A3A3',
+                progressColor: '#667eea',
+                cursorColor: '#764ba2',
+                barWidth: 2,
+                barRadius: 2,
+                height: 64,
+                barGap: 1,
+                responsive: true,
+                normalize: true
+            });
+
+            const blob = await audioBufferToBlob(clip.buffer);
+            await clip.wavesurfer.loadBlob(blob);
+
+            // Event listeners for clip playback
+            clip.wavesurfer.on('play', () => updateClipPlayButton(clip.id, true));
+            clip.wavesurfer.on('pause', () => updateClipPlayButton(clip.id, false));
+            clip.wavesurfer.on('finish', () => updateClipPlayButton(clip.id, false));
+
+            // Attach event listeners
+            attachClipEventListeners(clip.id);
+        }
+
+        function attachClipEventListeners(clipId) {
+            // Name change
+            document.querySelector(`input[data-clip-id="${clipId}"]`)
+                .addEventListener('change', (e) => updateClipName(clipId, e.target.value));
+
+            // Playback controls
+            document.querySelector(`.btn-clip-play[data-clip-id="${clipId}"]`)
+                .addEventListener('click', () => toggleClipPlayback(clipId));
+
+            document.querySelector(`.btn-clip-stop[data-clip-id="${clipId}"]`)
+                .addEventListener('click', () => stopClipPlayback(clipId));
+
+            document.querySelector(`.btn-clip-rewind[data-clip-id="${clipId}"]`)
+                .addEventListener('click', () => rewindClipPlayback(clipId));
+
+            document.querySelector(`.btn-clip-forward[data-clip-id="${clipId}"]`)
+                .addEventListener('click', () => forwardClipPlayback(clipId));
+
+            // Mute button
+            document.querySelector(`.btn-clip-mute[data-clip-id="${clipId}"]`)
+                .addEventListener('click', () => toggleClipMute(clipId));
+
+            // Download WAV
+            document.querySelector(`.btn-download-wav[data-clip-id="${clipId}"]`)
+                .addEventListener('click', () => downloadClip(clipId, 'wav'));
+
+            // Download MP3
+            document.querySelector(`.btn-download-mp3[data-clip-id="${clipId}"]`)
+                .addEventListener('click', () => downloadClip(clipId, 'mp3'));
+
+            // Delete
+            document.querySelector(`.btn-delete[data-clip-id="${clipId}"]`)
+                .addEventListener('click', () => deleteClip(clipId));
+        }
+
+        function updateClipName(clipId, newName) {
+            const clip = AppState.clips.find(c => c.id === clipId);
+            if (clip) {
+                clip.name = newName;
+            }
+        }
+
+        function toggleClipPlayback(clipId) {
+            const clip = AppState.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            if (clip.wavesurfer.isPlaying()) {
+                clip.wavesurfer.pause();
+            } else {
+                // Stop all other clips
+                AppState.clips.forEach(c => {
+                    if (c.id !== clipId && c.wavesurfer.isPlaying()) {
+                        c.wavesurfer.pause();
+                    }
+                });
+
+                clip.wavesurfer.play();
+            }
+        }
+
+        function updateClipPlayButton(clipId, isPlaying) {
+            const btn = document.querySelector(`.btn-clip-play[data-clip-id="${clipId}"]`);
+            if (btn) {
+                btn.textContent = isPlaying ? 'Pause' : 'Play';
+                btn.classList.toggle('playing', isPlaying);
+            }
+        }
+
+        function stopClipPlayback(clipId) {
+            const clip = AppState.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            clip.wavesurfer.stop();
+            updateClipPlayButton(clipId, false);
+        }
+
+        function rewindClipPlayback(clipId) {
+            const clip = AppState.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            const currentTime = clip.wavesurfer.getCurrentTime();
+            const newTime = Math.max(0, currentTime - 5);
+            clip.wavesurfer.seekTo(newTime / clip.wavesurfer.getDuration());
+        }
+
+        function forwardClipPlayback(clipId) {
+            const clip = AppState.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            const currentTime = clip.wavesurfer.getCurrentTime();
+            const duration = clip.wavesurfer.getDuration();
+            const newTime = Math.min(duration, currentTime + 5);
+            clip.wavesurfer.seekTo(newTime / duration);
+        }
+
+        function toggleClipMute(clipId) {
+            const clip = AppState.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            clip.isMuted = !clip.isMuted;
+            clip.wavesurfer.setVolume(clip.isMuted ? 0 : 1);
+
+            const muteBtn = document.querySelector(`.btn-clip-mute[data-clip-id="${clipId}"]`);
+            muteBtn.textContent = clip.isMuted ? 'Unmute' : 'Mute';
+            muteBtn.classList.toggle('muted', clip.isMuted);
+        }
+
+        function deleteClip(clipId) {
+            const clip = AppState.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            // Confirm deletion
+            if (!confirm(`Delete "${clip.name}"?`)) return;
+
+            // Destroy Wavesurfer instance
+            clip.wavesurfer.destroy();
+
+            // Remove from DOM
+            document.getElementById(clip.id).remove();
+
+            // Remove from state
+            AppState.clips = AppState.clips.filter(c => c.id !== clipId);
+
+            // Hide clips section if no clips remain
+            if (AppState.clips.length === 0) {
+                document.getElementById('clips-section').style.display = 'none';
+            }
+        }
+
+        // ========================================
+        // Export Module
+        // ========================================
+
+        function audioBufferToWav(buffer) {
+            const numberOfChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const length = buffer.length * numberOfChannels * 2;
+
+            const arrayBuffer = new ArrayBuffer(44 + length);
+            const view = new DataView(arrayBuffer);
+
+            // WAV header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + length, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);                     // Subchunk1Size
+            view.setUint16(20, 1, true);                      // AudioFormat (PCM)
+            view.setUint16(22, numberOfChannels, true);       // NumChannels
+            view.setUint32(24, sampleRate, true);             // SampleRate
+            view.setUint32(28, sampleRate * numberOfChannels * 2, true); // ByteRate
+            view.setUint16(32, numberOfChannels * 2, true);   // BlockAlign
+            view.setUint16(34, 16, true);                     // BitsPerSample
+            writeString(view, 36, 'data');
+            view.setUint32(40, length, true);
+
+            // Write audio data
+            const channels = [];
+            for (let i = 0; i < numberOfChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            let index = 44;
+            for (let i = 0; i < buffer.length; i++) {
+                for (let channel = 0; channel < numberOfChannels; channel++) {
+                    const sample = Math.max(-1, Math.min(1, channels[channel][i]));
+                    view.setInt16(index, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    index += 2;
+                }
+            }
+
+            return arrayBuffer;
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        function audioBufferToMp3(buffer) {
+            const mp3Encoder = new lamejs.Mp3Encoder(
+                buffer.numberOfChannels,
+                buffer.sampleRate,
+                128  // kbps
+            );
+
+            const sampleBlockSize = 1152;
+            const mp3Data = [];
+
+            // Convert Float32Array to Int16Array
+            const leftChannel = convertFloat32ToInt16(buffer.getChannelData(0));
+            const rightChannel = buffer.numberOfChannels > 1
+                ? convertFloat32ToInt16(buffer.getChannelData(1))
+                : leftChannel;
+
+            // Encode in blocks
+            for (let i = 0; i < leftChannel.length; i += sampleBlockSize) {
+                const leftChunk = leftChannel.subarray(i, i + sampleBlockSize);
+                const rightChunk = rightChannel.subarray(i, i + sampleBlockSize);
+
+                const mp3buf = mp3Encoder.encodeBuffer(leftChunk, rightChunk);
+                if (mp3buf.length > 0) {
+                    mp3Data.push(mp3buf);
+                }
+            }
+
+            // Flush remaining data
+            const mp3buf = mp3Encoder.flush();
+            if (mp3buf.length > 0) {
+                mp3Data.push(mp3buf);
+            }
+
+            // Combine all chunks
+            const totalLength = mp3Data.reduce((acc, chunk) => acc + chunk.length, 0);
+            const result = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const chunk of mp3Data) {
+                result.set(chunk, offset);
+                offset += chunk.length;
+            }
+
+            return result.buffer;
+        }
+
+        function convertFloat32ToInt16(float32Array) {
+            const int16Array = new Int16Array(float32Array.length);
+            for (let i = 0; i < float32Array.length; i++) {
+                const s = Math.max(-1, Math.min(1, float32Array[i]));
+                int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            return int16Array;
+        }
+
+        function downloadClip(clipId, format) {
+            const clip = AppState.clips.find(c => c.id === clipId);
+            if (!clip) return;
+
+            try {
+                let arrayBuffer;
+                let mimeType;
+                let extension;
+
+                if (format === 'wav') {
+                    arrayBuffer = audioBufferToWav(clip.buffer);
+                    mimeType = 'audio/wav';
+                    extension = 'wav';
+                } else if (format === 'mp3') {
+                    arrayBuffer = audioBufferToMp3(clip.buffer);
+                    mimeType = 'audio/mp3';
+                    extension = 'mp3';
+                }
+
+                const blob = new Blob([arrayBuffer], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `${sanitizeFileName(clip.name)}.${extension}`;
+
+                document.body.appendChild(a);
+                a.click();
+
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+            } catch (error) {
+                console.error('Error downloading clip:', error);
+                alert('Error creating download. Please try again.');
+            }
+        }
+
+        // ========================================
+        // Utility Functions
+        // ========================================
+
+        async function audioBufferToBlob(buffer) {
+            const wavArrayBuffer = audioBufferToWav(buffer);
+            return new Blob([wavArrayBuffer], { type: 'audio/wav' });
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function sanitizeFileName(name) {
+            return name.replace(/[^a-z0-9_\-\s]/gi, '_').replace(/\s+/g, '_');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('uploadError');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            const errorDiv = document.getElementById('uploadError');
+            errorDiv.classList.remove('show');
+        }
+
+        // ========================================
+        // Event Listeners
+        // ========================================
+
+        document.getElementById('audioFile').addEventListener('change', handleFileUpload);
+        document.getElementById('playPause').addEventListener('click', toggleMasterPlayback);
+        document.getElementById('stop').addEventListener('click', stopPlayback);
+        document.getElementById('rewind').addEventListener('click', rewindPlayback);
+        document.getElementById('forward').addEventListener('click', forwardPlayback);
+        document.getElementById('toggleLoop').addEventListener('click', toggleLoop);
+        document.getElementById('extractClip').addEventListener('click', createClip);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger shortcuts when typing in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            // Only enable shortcuts when master track is loaded
+            if (!AppState.masterWavesurfer) {
+                return;
+            }
+
+            switch(e.key.toLowerCase()) {
+                case ' ':  // Space - Play/Pause
+                    e.preventDefault();
+                    toggleMasterPlayback();
+                    break;
+                case 's':  // S - Stop
+                    e.preventDefault();
+                    stopPlayback();
+                    break;
+                case 'arrowleft':  // Left Arrow - Rewind
+                    e.preventDefault();
+                    rewindPlayback();
+                    break;
+                case 'arrowright':  // Right Arrow - Forward
+                    e.preventDefault();
+                    forwardPlayback();
+                    break;
+                case 'l':  // L - Toggle Loop
+                    e.preventDefault();
+                    if (!document.getElementById('toggleLoop').disabled) {
+                        toggleLoop();
+                    }
+                    break;
+                case 'e':  // E - Extract
+                    e.preventDefault();
+                    if (!document.getElementById('extractClip').disabled) {
+                        createClip();
+                    }
+                    break;
+            }
+        });
+
+        // ========================================
+        // Initialization
+        // ========================================
+
+        // Check for Web Audio API support
+        if (!window.AudioContext && !window.webkitAudioContext) {
+            showError('Your browser does not support the Web Audio API. Please use a modern browser like Chrome, Firefox, Safari, or Edge.');
+        }
+
+    </script>
+</body>
+</html>
